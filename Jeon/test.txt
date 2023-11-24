@@ -1,0 +1,151 @@
+Start capture
+Ethernet Header
+  - Source MAC: 5c:e9:1e:b7:d1:19
+  - Destination MAC: b4:a9:4f:08:a3:52
+  - Ether Type: 0x0800
+IP Header
+  - Source IP: 172.30.1.26
+  - Destination IP: 34.120.214.181
+  - Protocol: 6
+TCP Header
+  - Source Port: 51286
+  - Destination Port: 443
+  - Sequence Number: 72849232
+  - Acknowledgment Number: 1349925291
+
+--------------------------------------------
+Ethernet Header
+  - Source MAC: b4:a9:4f:08:a3:52
+  - Destination MAC: 5c:e9:1e:b7:d1:19
+  - Ether Type: 0x0800
+IP Header
+  - Source IP: 34.120.214.181
+  - Destination IP: 172.30.1.26
+  - Protocol: 6
+TCP Header
+  - Source Port: 443
+  - Destination Port: 51286
+  - Sequence Number: 1349925291
+  - Acknowledgment Number: 72849233
+
+--------------------------------------------
+Ethernet Header
+  - Source MAC: 5c:e9:1e:b7:d1:19
+  - Destination MAC: b4:a9:4f:08:a3:52
+  - Ether Type: 0x0800
+IP Header
+  - Source IP: 172.30.1.26
+  - Destination IP: 49.50.167.165
+  - Protocol: 6
+TCP Header
+  - Source Port: 51336
+  - Destination Port: 8080
+  - Sequence Number: 1339167650
+  - Acknowledgment Number: 0
+
+--------------------------------------------
+Ethernet Header
+  - Source MAC: 5c:e9:1e:b7:d1:19
+  - Destination MAC: b4:a9:4f:08:a3:52
+  - Ether Type: 0x0800
+IP Header
+  - Source IP: 172.30.1.26
+  - Destination IP: 49.50.167.165
+  - Protocol: 6
+TCP Header
+  - Source Port: 51336
+  - Destination Port: 8080
+  - Sequence Number: 1339167650
+  - Acknowledgment Number: 0
+
+--------------------------------------------
+Ethernet Header
+  - Source MAC: 5c:e9:1e:b7:d1:19
+  - Destination MAC: b4:a9:4f:08:a3:52
+  - Ether Type: 0x0800
+IP Header
+  - Source IP: 172.30.1.26
+  - Destination IP: 49.50.167.165
+  - Protocol: 6
+TCP Header
+  - Source Port: 51336
+  - Destination Port: 8080
+  - Sequence Number: 1339167650
+  - Acknowledgment Number: 0
+
+--------------------------------------------
+Ethernet Header
+  - Source MAC: 5c:e9:1e:b7:d1:19
+  - Destination MAC: b4:a9:4f:08:a3:52
+  - Ether Type: 0x0800
+IP Header
+  - Source IP: 172.30.1.26
+  - Destination IP: 49.50.167.165
+  - Protocol: 6
+TCP Header
+  - Source Port: 51337
+  - Destination Port: 8080
+  - Sequence Number: 2653211129
+  - Acknowledgment Number: 0
+
+--------------------------------------------
+Ethernet Header
+  - Source MAC: 5c:e9:1e:b7:d1:19
+  - Destination MAC: b4:a9:4f:08:a3:52
+  - Ether Type: 0x0800
+IP Header
+  - Source IP: 172.30.1.26
+  - Destination IP: 49.50.167.165
+  - Protocol: 6
+TCP Header
+  - Source Port: 51337
+  - Destination Port: 8080
+  - Sequence Number: 2653211129
+  - Acknowledgment Number: 0
+
+--------------------------------------------
+Ethernet Header
+  - Source MAC: 5c:e9:1e:b7:d1:19
+  - Destination MAC: b4:a9:4f:08:a3:52
+  - Ether Type: 0x0800
+IP Header
+  - Source IP: 172.30.1.26
+  - Destination IP: 49.50.167.165
+  - Protocol: 6
+TCP Header
+  - Source Port: 51337
+  - Destination Port: 8080
+  - Sequence Number: 2653211129
+  - Acknowledgment Number: 0
+
+--------------------------------------------
+Ethernet Header
+  - Source MAC: 5c:e9:1e:b7:d1:19
+  - Destination MAC: b4:a9:4f:08:a3:52
+  - Ether Type: 0x0800
+IP Header
+  - Source IP: 172.30.1.26
+  - Destination IP: 49.50.167.165
+  - Protocol: 6
+TCP Header
+  - Source Port: 51337
+  - Destination Port: 8080
+  - Sequence Number: 2653211129
+  - Acknowledgment Number: 0
+
+--------------------------------------------
+Ethernet Header
+  - Source MAC: 5c:e9:1e:b7:d1:19
+  - Destination MAC: b4:a9:4f:08:a3:52
+  - Ether Type: 0x0800
+IP Header
+  - Source IP: 172.30.1.26
+  - Destination IP: 49.50.167.165
+  - Protocol: 6
+TCP Header
+  - Source Port: 51337
+  - Destination Port: 8080
+  - Sequence Number: 2653211129
+  - Acknowledgment Number: 0
+
+--------------------------------------------
