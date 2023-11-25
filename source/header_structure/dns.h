@@ -1,3 +1,6 @@
+#ifndef NETWORK_RAW_SOCKET_DNS_H
+#define NETWORK_RAW_SOCKET_DNS_H
+
 struct dnsHeader{
     unsigned short id;
     unsigned char rd : 1;
@@ -15,3 +18,5 @@ struct dnsHeader{
     unsigned short nscount;
     unsigned short arcount;
 };
+
+#endif NETWORK_RAW_SOCKET_DNS_H
