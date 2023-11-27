@@ -13,6 +13,9 @@
 #include "header_structure/dns.h"
 #include "header_structure/ssh.h"
 #include "header_structure/http.h"
+#include "header_structure/tcp.h"
+#include "header_structure/udp.h"
+#include "header_structure/ip.h"
 
 #define TCP 6
 #define UDP 17
@@ -164,12 +167,12 @@ void captureManager(struct LogQueue* q, char* buf, int size){
         }else if(ipHeader->protocol == UDP){
             struct udphdr* udpHeader = (struct udphdr*)(buf + overloadLength);
             udpCapture(&lq, udpHeader); // UDP 헤더 분석 함수 호출
-            uint16_t sourcePort = ntohs(uh->source_port);
-            uint16_t destPort = ntohs(uh->dest_port); 
+            uint16_t sourcePort = ntohs(udpHeader->source_port);
+            uint16_t destPort = ntohs(udpHeader->dest_port); 
             if(sourcePort == UDP){
 
             }else if(destPort == UDP){
-                
+
             }
         }
 
