@@ -66,7 +66,7 @@ char* dequeue(struct LogQueue* q){
         return NULL;
 
     struct LogQueueNode* frontLog = q->front;
-    char* data = frontLog->data;
+    char* data = strdup(frontLog->data);
     if(frontLog == q->rear){
         q->front = NULL;
         q->rear = NULL;
