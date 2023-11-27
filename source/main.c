@@ -201,10 +201,10 @@ void tcpCapture(struct LogQueue* q, struct tcphdr* th) {
     enqueue(q, tcpBuf);
     printf("%s", tcpBuf);
 
-    uint16_t sourcePort = ntohs(th->source_port);
-    uint16_t destPort = ntohs(th->dest_port);
-    uint32_t seqNumber = ntohl(th->sequence_number);
-    uint32_t ackNumber = ntohl(th->acknowledgment);
+    uint16_t sourcePort = ntohs(th->th_sport);
+    uint16_t destPort = ntohs(th->th_dport);
+    uint32_t seqNumber = ntohl(th->th_seq);
+    uint32_t ackNumber = ntohl(th->th_ack);
 
 
     snprintf(tcpBuf, sizeof(tcpBuf), " - Source Port: %u\n", sourcePort);
