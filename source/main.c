@@ -13,9 +13,6 @@
 #include "header_structure/dns.h"
 #include "header_structure/ssh.h"
 #include "header_structure/http.h"
-#include "header_structure/tcp.h"
-#include "header_structure/udp.h"
-#include "header_structure/ip.h"
 
 #define TCP 6
 #define UDP 17
@@ -167,8 +164,8 @@ void captureManager(struct LogQueue* q, char* buf, int size){
         }else if(ipHeader->protocol == UDP){
             struct udphdr* udpHeader = (struct udphdr*)(buf + overloadLength);
             udpCapture(&lq, udpHeader); // UDP 헤더 분석 함수 호출
-            uint16_t sourcePort = ntohs(udpHeader->source_port);
-            uint16_t destPort = ntohs(udpHeader->dest_port); 
+            uint16_t sourcePort = ntohs(udpHeader->uh_sport);
+            uint16_t destPort = ntohs(udpHeader->uh_dport); 
             if(sourcePort == UDP){
 
             }else if(destPort == UDP){
@@ -198,7 +195,7 @@ int ethernetCapture(struct LogQueue* q, struct ethhdr* eh){
     return eh->h_proto;
 }
 
-void tcpCapture(struct LogQueue* q, struct tcpHeader* th) {
+void tcpCapture(struct LogQueue* q, struct tcphdr* th) {
     char tcpBuf[1024];
     snprintf(tcpBuf, sizeof(tcpBuf), "\n[TCP Header]\n");
     enqueue(q, tcpBuf);
@@ -228,15 +225,16 @@ void tcpCapture(struct LogQueue* q, struct tcpHeader* th) {
     printf("%s", tcpBuf);
 }
 
-void udpCapture(struct LogQueue* q, struct udpHeader* uh) {
+void udpCapture(struct LogQueue* q, struct udphdr* uh) {
     char udpBuf[1024];
     snprintf(udpBuf, sizeof(udpBuf), "\n[UDP Header]\n");
     enqueue(q, udpBuf);
     printf("%s", udpBuf);
 
-    uint16_t sourcePort = ntohs(uh->source_port);
-    uint16_t destPort = ntohs(uh->dest_port);
-    uint16_t length = ntohs(uh->length);
+    uint16_t sourcePort = ntohs(uh->uh_sport);
+    uint16_t destPort = ntohs(uh->uh_dport);
+    uint16_t length = ntohs(uh->uh_ulen);
+
 
     snprintf(udpBuf, sizeof(udpBuf), " - Source Port: %u\n", sourcePort);
     enqueue(q, udpBuf);
@@ -246,12 +244,12 @@ void udpCapture(struct LogQueue* q, struct udpHeader* uh) {
     enqueue(q, udpBuf);
     printf("%s", udpBuf);
 
+    uint16_t checksum = ntohs(uh->uh_sum);
+
     snprintf(udpBuf, sizeof(udpBuf), " - Length: %u\n", length);
     enqueue(q, udpBuf);
     printf("%s", udpBuf);
-
 }
-
 
 void saveCaptureManager(){
     printf("분석 내용을 저장하시겠습니까? [y/n] ");
