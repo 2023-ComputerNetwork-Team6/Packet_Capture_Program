@@ -148,6 +148,7 @@ void captureManager(struct LogQueue* q, char* buf, int size){
 
         }else if(ipHeader->protocol == TCP){
             struct tcphdr* tcpHeader = (struct tcphdr*)(buf + overloadLength);
+            tcpCapture(&lq, tcpHeader); // TCP 헤더 분석 함수 호출
             uint16_t sourcePort = ntohs(tcpHeader->th_sport);
             uint16_t destPort = ntohs(tcpHeader->th_dport);
             if(sourcePort == HTTP){
@@ -162,6 +163,14 @@ void captureManager(struct LogQueue* q, char* buf, int size){
 
         }else if(ipHeader->protocol == UDP){
             struct udphdr* udpHeader = (struct udphdr*)(buf + overloadLength);
+            udpCapture(&lq, udpHeader); // UDP 헤더 분석 함수 호출
+            uint16_t sourcePort = ntohs(uh->source_port);
+            uint16_t destPort = ntohs(uh->dest_port); 
+            if(sourcePort == UDP){
+
+            }else if(destPort == UDP){
+                
+            }
         }
 
     }else if(ethernetHeader == ETH_P_IPV6){
@@ -185,6 +194,61 @@ int ethernetCapture(struct LogQueue* q, struct ethhdr* eh){
 
     return eh->h_proto;
 }
+
+void tcpCapture(struct LogQueue* q, struct tcpHeader* th) {
+    char tcpBuf[1024];
+    snprintf(tcpBuf, sizeof(tcpBuf), "\n[TCP Header]\n");
+    enqueue(q, tcpBuf);
+    printf("%s", tcpBuf);
+
+    uint16_t sourcePort = ntohs(th->source_port);
+    uint16_t destPort = ntohs(th->dest_port);
+    uint32_t seqNumber = ntohl(th->sequence_number);
+    uint32_t ackNumber = ntohl(th->acknowledgment);
+
+
+    snprintf(tcpBuf, sizeof(tcpBuf), " - Source Port: %u\n", sourcePort);
+    enqueue(q, tcpBuf);
+    printf("%s", tcpBuf);
+
+    snprintf(tcpBuf, sizeof(tcpBuf), " - Destination Port: %u\n", destPort);
+    enqueue(q, tcpBuf);
+    printf("%s", tcpBuf);
+
+
+    snprintf(tcpBuf, sizeof(tcpBuf), " - Seq Number: %u\n", seqNumber);
+    enqueue(q, tcpBuf);
+    printf("%s", tcpBuf);
+
+    snprintf(tcpBuf, sizeof(tcpBuf), " - Ack Number: %u\n", ackNumber);
+    enqueue(q, tcpBuf);
+    printf("%s", tcpBuf);
+}
+
+void udpCapture(struct LogQueue* q, struct udpHeader* uh) {
+    char udpBuf[1024];
+    snprintf(udpBuf, sizeof(udpBuf), "\n[UDP Header]\n");
+    enqueue(q, udpBuf);
+    printf("%s", udpBuf);
+
+    uint16_t sourcePort = ntohs(uh->source_port);
+    uint16_t destPort = ntohs(uh->dest_port);
+    uint16_t length = ntohs(uh->length);
+
+    snprintf(udpBuf, sizeof(udpBuf), " - Source Port: %u\n", sourcePort);
+    enqueue(q, udpBuf);
+    printf("%s", udpBuf);
+
+    snprintf(udpBuf, sizeof(udpBuf), " - Destination Port: %u\n", destPort);
+    enqueue(q, udpBuf);
+    printf("%s", udpBuf);
+
+    snprintf(udpBuf, sizeof(udpBuf), " - Length: %u\n", length);
+    enqueue(q, udpBuf);
+    printf("%s", udpBuf);
+
+}
+
 
 void saveCaptureManager(){
     printf("분석 내용을 저장하시겠습니까? [y/n] ");
