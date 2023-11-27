@@ -14,13 +14,12 @@
 #include "header_structure/ssh.h"
 #include "header_structure/http.h"
 
-#define TCP 't'
-#define UDP 'u'
-#define ICMP 'i'
-#define DNS 'd'
-#define HTTP 'h'
-#define SSH 's'
-#define NONE 'n'
+#define TCP 6
+#define UDP 17
+#define ICMP 1
+#define DNS 53
+#define HTTP 80
+#define SSH 22
 
 #define MAX_PACKET_SIZE 65536
 #define MAX_FILE_NAME 30
@@ -44,7 +43,7 @@ void sshCapture(struct LogQueue* q, struct sshHeader* sh);
 void saveCaptureManager();
 void saveCapture(char* fn);
 
-int recvStatus = 1;
+int recvStatus = 0;
 struct LogQueue lq;
 
 int main() {
@@ -58,14 +57,15 @@ int main() {
 void menuManager(){
     int menu = -1;
     int rs;
+    int start = 0;
     pthread_t ct;
     while(1){
-        recvStatus = 1;
         menuPrint();
         scanf("%d", &menu);
         scanf("%*c");           //버퍼 비우기
         switch (menu) {
             case 1:
+                start = 1;
                 recvStatus = 1;
                 if((rs = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) == -1){
                     printf("[오류] raw socket 생성에 실패했습니다. 프로그램을 종료합니다.");
@@ -75,6 +75,10 @@ void menuManager(){
                 pthread_detach(ct);
                 break;
             case 2:
+                if(start == 0){
+                    printf("분석한 패킷의 내용이 존재하지 않습니다.\n");
+                    break;
+                }
                 recvStatus = 0;
                 saveCaptureManager();
                 break;
@@ -89,6 +93,7 @@ void menuManager(){
                     printf("* 0 이하의 값을 입력하시면 초기 사이즈(2000줄) 설정으로 돌아갑니다.\n   [현재 사이즈 : %d줄]\n", lq.maxSize);
                     printf("입력 값 : ");
                     scanf(" %d", &answer);
+
                     if(isdigit(answer)){
                         initialize(&lq, answer);
                     }else{
@@ -137,11 +142,48 @@ void captureManager(struct LogQueue* q, char* buf, int size){
     int ethernetType;
     if((ethernetType = ethernetCapture(&lq, ethernetHeader) == ETH_P_IP)){
         struct iphdr* ipHeader = (struct iphdr*)(buf + ETH_HLEN);
+        int overloadLength = ETH_HLEN + ipHeader->ihl;
+        if(ipHeader->protocol == ICMP){
+            struct icmphdr* icmpHeader = (struct icmphdr*)(buf + overloadLength);
+
+        }else if(ipHeader->protocol == TCP){
+            struct tcphdr* tcpHeader = (struct tcphdr*)(buf + overloadLength);
+            uint16_t sourcePort = ntohs(tcpHeader->th_sport);
+            uint16_t destPort = ntohs(tcpHeader->th_dport);
+            if(sourcePort == HTTP){
+
+            }else if(destPort == HTTP){
+
+            }else if(sourcePort == SSH){
+
+            }else if(destPort == SSH){
+
+            }
+
+        }else if(ipHeader->protocol == UDP){
+            struct udphdr* udpHeader = (struct udphdr*)(buf + overloadLength);
+        }
+
     }else if(ethernetHeader == ETH_P_IPV6){
-        struct ip6_hdr* ip6Header = (struct ip6_hdr*)(buf  + ETH_HLEN);
+
     }
+}
 
+int ethernetCapture(struct LogQueue* q, struct ethhdr* eh){
+    char etherBuf[201];
+    snprintf(etherBuf, sizeof(etherBuf), "\n\n[Ethernet Header]\n");
+    enqueue(q, etherBuf);
+    printf("%s", etherBuf);
 
+    snprintf(etherBuf, sizeof(etherBuf), " - Source MAC : [%02x:%02x:%02x:%02x:%02x:%02x]\n", eh->h_source[0], eh->h_source[1], eh->h_source[2], eh->h_source[3], eh->h_source[4], eh->h_source[5]);
+    enqueue(q, etherBuf);
+    printf("%s", etherBuf);
+
+    snprintf(etherBuf, sizeof(etherBuf)," - Dest MAC : [%02x:%02x:%02x:%02x:%02x:%02x]\n", eh->h_dest[0], eh->h_dest[1], eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
+    enqueue(q, etherBuf);
+    printf("%s", etherBuf);
+
+    return eh->h_proto;
 }
 
 void saveCaptureManager(){
@@ -164,7 +206,7 @@ void saveCaptureManager(){
 }
 
 void saveCapture(char* fn){
-    char fileName[MAX_FILE_NAME + 5];
+    char fileName[MAX_FILE_NAME + 5] ={0};
     char* txt = ".txt";
     strcat(fileName, fn);
     strcat(fileName, txt);
@@ -176,8 +218,8 @@ void saveCapture(char* fn){
     unsigned int size = lq.size;
 
     printf("%s 파일을 저장하는 중입니다.\n\n[전체 %d 줄]\n", fileName, size);
-    while(lq.front == NULL){
-        char* data = strdup(lq.front->data);
+    while(lq.front != NULL){
+        char* data = strdup(dequeue(&lq));
         fprintf(captureLog, "%s\n", data);
     }
     fclose(captureLog);

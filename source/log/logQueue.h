@@ -7,7 +7,7 @@
 #include <string.h>
 
 #define MAX_QUEUE_SIZE 2000
-#define MAX_DATA_SIZE 201
+#define MAX_DATA_SIZE 51
 
 struct LogQueueNode{
     char data[MAX_DATA_SIZE];
@@ -36,7 +36,7 @@ void initialize(struct LogQueue* q, int max_size){
 };
 
 void enqueue(struct LogQueue* q, const char* data){
-    if(q->size <= MAX_QUEUE_SIZE){
+    if(q->size >= q->maxSize){
         return;
     }
 
