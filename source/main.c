@@ -32,7 +32,7 @@ void menuPrint();
 
 void* captureThread(void* arg);
 
-void captureManager(struct LogQueue* q, char* buf, int size);
+void captureManager(struct LogQueue* q, char* buf);
 void ethernetCapture(struct LogQueue* q, struct ethhdr* eh);
 void ipCapture(struct LogQueue* q, struct iphdr* iph);
 void tcpCapture(struct LogQueue* q, struct tcphdr* th);
@@ -127,13 +127,13 @@ void* captureThread(void* arg){
             printf("[오류] 데이터를 수신과정에서 오류가 발생했습니다.\n패킷 분석을 강제종료합니다.");
             pthread_exit(NULL);
         }
-        captureManager(&lq, buf, data);
+        captureManager(&lq, buf);
     }
 
     free(buf);
 }
 
-void captureManager(struct LogQueue* q, char* buf, int size){
+void captureManager(struct LogQueue* q, char* buf){
     struct ethhdr* ethernetHeader = (struct ethhdr*)buf;
     ethernetCapture(&lq, ethernetHeader);
 
@@ -189,29 +189,29 @@ void ethernetCapture(struct LogQueue* q, struct ethhdr* eh){
     printf("%s", etherBuf);
 }
 
-void ipCapture(struct LogQueue* q, struct iphdr* ip){
+void ipCapture(struct LogQueue* q, struct iphdr* iph){
     char ipBuf[MAX_DATA_SIZE];
     struct in_addr s, d;
-    s.s_addr = ip->saddr;
-    d.s_addr = ip->daddr;
+    s.s_addr = iph->saddr;
+    d.s_addr = iph->daddr;
 
     snprintf(ipBuf, sizeof(ipBuf), "[IP Header]\n");
     enqueue(q, ipBuf);
     printf("%s", ipBuf);
 
-    snprintf(ipBuf, sizeof(ipBuf), " - Version : IPv%d\n", ip->version);
+    snprintf(ipBuf, sizeof(ipBuf), " - Version : IPv%d\n", iph->version);
     enqueue(q, ipBuf);
     printf("%s", ipBuf);
 
-    snprintf(ipBuf, sizeof(ipBuf), " - IP Header Length : %d\n", ip->ihl*4);
+    snprintf(ipBuf, sizeof(ipBuf), " - IP Header Length : %d\n", iph->ihl*4);
     enqueue(q, ipBuf);
     printf("%s", ipBuf);
 
-    snprintf(ipBuf, sizeof(ipBuf), " - Protocol : %d\n", ip->protocol);
+    snprintf(ipBuf, sizeof(ipBuf), " - Protocol : %d\n", iph->protocol);
     enqueue(q, ipBuf);
     printf("%s", ipBuf);
 
-    snprintf(ipBuf, sizeof(ipBuf), " - Checksum : %d\n", ip->check);
+    snprintf(ipBuf, sizeof(ipBuf), " - Checksum : %d\n", iph->check);
     enqueue(q, ipBuf);
     printf("%s", ipBuf);
 
@@ -222,6 +222,10 @@ void ipCapture(struct LogQueue* q, struct iphdr* ip){
     snprintf(ipBuf, sizeof(ipBuf), " - Dest IP : %s\n", inet_ntoa(d));
     enqueue(q, ipBuf);
     printf("%s", ipBuf);
+}
+
+void icmpCapture(struct LogQueue* q, struct icmphdr* ih){
+
 }
 
 void tcpCapture(struct LogQueue* q, struct tcphdr* th) {
