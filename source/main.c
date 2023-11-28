@@ -79,7 +79,6 @@ void menuManager(){
                     printf("분석한 패킷의 내용이 존재하지 않습니다.\n");
                     break;
                 }
-                pthread_cancel(ct);
                 recvStatus = 0;
                 saveCaptureManager();
                 break;
