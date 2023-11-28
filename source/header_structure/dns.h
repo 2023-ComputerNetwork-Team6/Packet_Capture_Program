@@ -19,4 +19,10 @@ struct dnsHeader{
     unsigned short arcount;
 };
 
+struct dnsPacket {
+    struct dnsHeader* dnsHeader;
+    char* data;
+    int dataSize;
+};
+
 #endif NETWORK_RAW_SOCKET_DNS_H

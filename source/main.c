@@ -38,7 +38,8 @@ void ipCapture(struct LogQueue* q, struct iphdr* iph);
 void tcpCapture(struct LogQueue* q, struct tcphdr* th);
 void udpCapture(struct LogQueue* q, struct udphdr* uh);
 void icmpCapture(struct LogQueue* q, struct icmphdr* ih);
-void dnsCapture(struct LogQueue* q, struct dnsHeader* dh);
+// void dnsCapture(struct LogQueue* q, struct dnsHeader* dh);
+void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket);
 void httpCapture(struct LogQueue* q, struct httpHeader* hh);
 void sshCapture(struct LogQueue* q, struct sshHeader* sh);
 
@@ -282,6 +283,41 @@ void udpCapture(struct LogQueue* q, struct udphdr* uh) {
     snprintf(udpBuf, sizeof(udpBuf), " - Length: %u\n", length);
     enqueue(q, udpBuf);
     printf("%s", udpBuf);
+}
+
+void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket) {
+    struct dnsHeader* dh = dnsPacket->dnsHeader;
+    char* data = dnsPacket->data;
+    int dataSize = dnsPacket->dataSize;
+
+    // DNS Header
+    char dnsBuf[1024];
+    snprintf(dnsBuf, sizeof(dnsBuf), "\n[DNS Header]\n");
+    enqueue(q, dnsBuf);
+    printf("%s", dnsBuf);
+
+    snprintf(dnsBuf, sizeof(dnsBuf), " - ID: %04x\n", ntohs(dh->id));
+    enqueue(q, dnsBuf);
+    printf("%s", dnsBuf);
+
+    // Flag 및 DNS 데이터 출력 부분은 아직 미완
+    
+    // snprintf(dnsBuf, sizeof(dnsBuf), " - FLAGS: %04x\n", ntohs(dh->id));
+    // enqueue(q, dnsBuf);
+    // printf("%s", dnsBuf);
+
+    // DNS Data
+    // snprintf(dnsBuf, sizeof(dnsBuf), "\n[DNS Data]\n");
+    // enqueue(q, dnsBuf);
+    // printf("%s", dnsBuf);
+
+    // // DNS 데이터 출력 (주의: 데이터가 바이너리일 수 있으므로 문자열로 변환 필요), 현재는 16진수로 출력
+    // for (int i = 0; i < dataSize; i++) {
+    //     snprintf(dnsBuf, sizeof(dnsBuf), "%02x ", data[i] & 0xFF);
+    //     enqueue(q, dnsBuf);
+    //     printf("%s", dnsBuf);
+    // }
+    printf("\n");
 }
 
 void saveCaptureManager(){
