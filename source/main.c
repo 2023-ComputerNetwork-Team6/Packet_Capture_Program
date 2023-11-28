@@ -9,11 +9,13 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <ctype.h>
+#include <arpa/inet.h>
 #include "log/logQueue.h"
 #include "header_structure/dns.h"
 #include "header_structure/ssh.h"
 #include "header_structure/http.h"
 
+#define IP 8
 #define TCP 6
 #define UDP 17
 #define ICMP 1
@@ -31,8 +33,8 @@ void menuPrint();
 void* captureThread(void* arg);
 
 void captureManager(struct LogQueue* q, char* buf, int size);
-int ethernetCapture(struct LogQueue* q, struct ethhdr* eh);
-int* ipCapture(struct LogQueue* q, struct iphdr* iph);
+void ethernetCapture(struct LogQueue* q, struct ethhdr* eh);
+void ipCapture(struct LogQueue* q, struct iphdr* iph);
 void tcpCapture(struct LogQueue* q, struct tcphdr* th);
 void udpCapture(struct LogQueue* q, struct udphdr* uh);
 void icmpCapture(struct LogQueue* q, struct icmphdr* ih);
@@ -93,12 +95,7 @@ void menuManager(){
                     printf("* 0 이하의 값을 입력하시면 초기 사이즈(2000줄) 설정으로 돌아갑니다.\n   [현재 사이즈 : %d줄]\n", lq.maxSize);
                     printf("입력 값 : ");
                     scanf(" %d", &answer);
-
-                    if(isdigit(answer)){
-                        initialize(&lq, answer);
-                    }else{
-                        printf("[오류] 입력값이 숫자가 아닙니다.\n");
-                    }
+                    initialize(&lq, answer);
                 }
                 break;
             case 0:
@@ -138,11 +135,13 @@ void* captureThread(void* arg){
 
 void captureManager(struct LogQueue* q, char* buf, int size){
     struct ethhdr* ethernetHeader = (struct ethhdr*)buf;
+    ethernetCapture(&lq, ethernetHeader);
 
-    int ethernetType;
-    if((ethernetType = ethernetCapture(&lq, ethernetHeader) == ETH_P_IP)){
+    if(ethernetHeader->h_proto == IP){
         struct iphdr* ipHeader = (struct iphdr*)(buf + ETH_HLEN);
-        int overloadLength = ETH_HLEN + ipHeader->ihl;
+        int overloadLength = ETH_HLEN + (ipHeader->ihl*4);
+        ipCapture(&lq, ipHeader);
+
         if(ipHeader->protocol == ICMP){
             struct icmphdr* icmpHeader = (struct icmphdr*)(buf + overloadLength);
 
@@ -172,32 +171,62 @@ void captureManager(struct LogQueue* q, char* buf, int size){
 
             }
         }
-
-    }else if(ethernetHeader == ETH_P_IPV6){
-
     }
 }
 
-int ethernetCapture(struct LogQueue* q, struct ethhdr* eh){
-    char etherBuf[201];
+void ethernetCapture(struct LogQueue* q, struct ethhdr* eh){
+    char etherBuf[MAX_DATA_SIZE] = {'0'};
     snprintf(etherBuf, sizeof(etherBuf), "\n\n[Ethernet Header]\n");
     enqueue(q, etherBuf);
     printf("%s", etherBuf);
 
-    snprintf(etherBuf, sizeof(etherBuf), " - Source MAC : [%02x:%02x:%02x:%02x:%02x:%02x]\n", eh->h_source[0], eh->h_source[1], eh->h_source[2], eh->h_source[3], eh->h_source[4], eh->h_source[5]);
+    snprintf(etherBuf, sizeof(etherBuf), " - Source MAC : %02x:%02x:%02x:%02x:%02x:%02x\n", eh->h_source[0], eh->h_source[1], eh->h_source[2], eh->h_source[3], eh->h_source[4], eh->h_source[5]);
     enqueue(q, etherBuf);
     printf("%s", etherBuf);
 
-    snprintf(etherBuf, sizeof(etherBuf)," - Dest MAC : [%02x:%02x:%02x:%02x:%02x:%02x]\n", eh->h_dest[0], eh->h_dest[1], eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
+    snprintf(etherBuf, sizeof(etherBuf)," - Dest MAC : %02x:%02x:%02x:%02x:%02x:%02x\n", eh->h_dest[0], eh->h_dest[1], eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
     enqueue(q, etherBuf);
     printf("%s", etherBuf);
+}
 
-    return eh->h_proto;
+void ipCapture(struct LogQueue* q, struct iphdr* ip){
+    char ipBuf[MAX_DATA_SIZE];
+    struct in_addr s, d;
+    s.s_addr = ip->saddr;
+    d.s_addr = ip->daddr;
+
+    snprintf(ipBuf, sizeof(ipBuf), "[IP Header]\n");
+    enqueue(q, ipBuf);
+    printf("%s", ipBuf);
+
+    snprintf(ipBuf, sizeof(ipBuf), " - Version : IPv%d\n", ip->version);
+    enqueue(q, ipBuf);
+    printf("%s", ipBuf);
+
+    snprintf(ipBuf, sizeof(ipBuf), " - IP Header Length : %d\n", ip->ihl*4);
+    enqueue(q, ipBuf);
+    printf("%s", ipBuf);
+
+    snprintf(ipBuf, sizeof(ipBuf), " - Protocol : %d\n", ip->protocol);
+    enqueue(q, ipBuf);
+    printf("%s", ipBuf);
+
+    snprintf(ipBuf, sizeof(ipBuf), " - Checksum : %d\n", ip->check);
+    enqueue(q, ipBuf);
+    printf("%s", ipBuf);
+
+    snprintf(ipBuf, sizeof(ipBuf), " - Source IP : %s\n", inet_ntoa(s));
+    enqueue(q, ipBuf);
+    printf("%s", ipBuf);
+
+    snprintf(ipBuf, sizeof(ipBuf), " - Dest IP : %s\n", inet_ntoa(d));
+    enqueue(q, ipBuf);
+    printf("%s", ipBuf);
 }
 
 void tcpCapture(struct LogQueue* q, struct tcphdr* th) {
-    char tcpBuf[1024];
-    snprintf(tcpBuf, sizeof(tcpBuf), "\n[TCP Header]\n");
+    char tcpBuf[MAX_DATA_SIZE];
+    snprintf(tcpBuf, sizeof(tcpBuf), "[TCP Header]\n");
     enqueue(q, tcpBuf);
     printf("%s", tcpBuf);
 
@@ -226,8 +255,8 @@ void tcpCapture(struct LogQueue* q, struct tcphdr* th) {
 }
 
 void udpCapture(struct LogQueue* q, struct udphdr* uh) {
-    char udpBuf[1024];
-    snprintf(udpBuf, sizeof(udpBuf), "\n[UDP Header]\n");
+    char udpBuf[MAX_DATA_SIZE];
+    snprintf(udpBuf, sizeof(udpBuf), "[UDP Header]\n");
     enqueue(q, udpBuf);
     printf("%s", udpBuf);
 
