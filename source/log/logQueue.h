@@ -28,7 +28,7 @@ void initialize(struct LogQueue* q, int max_size){
         q->front = NULL;
         q->rear = NULL;
     }else{
-        q->size = 1;
+        q->size = 0;
         q->maxSize = max_size;
         q->front = NULL;
         q->rear = NULL;
@@ -36,7 +36,7 @@ void initialize(struct LogQueue* q, int max_size){
 };
 
 void enqueue(struct LogQueue* q, const char* data){
-    if(q->size > q->maxSize){
+    if(q->size >= q->maxSize){
         return;
     }
 

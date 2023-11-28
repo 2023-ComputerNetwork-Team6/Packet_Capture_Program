@@ -149,10 +149,11 @@ void captureManager(struct LogQueue* q, char* buf){
             uint16_t sourcePort = ntohs(tcpHeader->th_sport);
             uint16_t destPort = ntohs(tcpHeader->th_dport);
             if(sourcePort == HTTP){
-                struct httpHeader* httpHeader = (struct httpHeader*)(tcpHeader + (tcpHeader->th_off)*4);
-                httpCapture(&lq, httpHeader);
+                struct httpPacket* httpPacket = (struct httpPacket*)(tcpHeader + (tcpHeader->th_off)*4);
+                httpCapture(&lq, httpPacket);
             }else if(destPort == HTTP){
-
+                struct httpPacket* httpPacket = (struct httpPacket*)(tcpHeader + (tcpHeader->th_off)*4);
+                httpCapture(&lq, httpPacket);
             }else if(sourcePort == SSH){
 
             }else if(destPort == SSH){
@@ -165,7 +166,8 @@ void captureManager(struct LogQueue* q, char* buf){
             uint16_t sourcePort = ntohs(udpHeader->uh_sport);
             uint16_t destPort = ntohs(udpHeader->uh_dport); 
             if(sourcePort == DNS){
-
+                struct dnsPacket* dnsPacket = (struct dnsPacket*)((char*)udpHeader + sizeof(struct udphdr));
+                dnsCapture(&lq, dnsPacket);
             }else if(destPort == DNS){
 
             }
@@ -309,18 +311,20 @@ void udpCapture(struct LogQueue* q, struct udphdr* uh) {
 
 void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket) {
     struct dnsHeader* dh = dnsPacket->dnsHeader;
+    if(dh == NULL)
+        printf("dh is null\n");
     char* data = dnsPacket->data;
     int dataSize = dnsPacket->dataSize;
 
     // DNS Header
-    char dnsBuf[1024];
-    snprintf(dnsBuf, sizeof(dnsBuf), "\n[DNS Header]\n");
+    char dnsBuf[MAX_DATA_SIZE];
+    snprintf(dnsBuf, sizeof(dnsBuf), "[DNS Header]\n");
     enqueue(q, dnsBuf);
     printf("%s", dnsBuf);
 
-    snprintf(dnsBuf, sizeof(dnsBuf), " - ID: %04x\n", ntohs(dh->id));
-    enqueue(q, dnsBuf);
-    printf("%s", dnsBuf);
+//    snprintf(dnsBuf, sizeof(dnsBuf), " - ID: %04x\n", ntohs(dh->id));
+//    enqueue(q, dnsBuf);
+//    printf("%s", dnsBuf);
 
     // Flag 및 DNS 데이터 출력 부분은 아직 미완
 
@@ -344,35 +348,53 @@ void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket) {
 
 void httpCapture(struct LogQueue* q, struct httpPacket* hp){
     struct httpHeader* hh = hp->headers;
+    if(hh == NULL)
+        printf("hh is null\n");
     char httpBuf[MAX_DATA_SIZE]={0};
+
+    snprintf(httpBuf, sizeof(httpBuf), "[HTTP]\n");
+    enqueue(q, httpBuf);
+    printf("%s", httpBuf);
+
+    snprintf(httpBuf, sizeof(httpBuf), " - Method : %s: \n", hp->method);
+    enqueue(q, httpBuf);
+    printf("%s", httpBuf);
+
+    snprintf(httpBuf, sizeof(httpBuf), " - Path : %s\n", hp->path);
+    enqueue(q, httpBuf);
+    printf("%s", httpBuf);
+
+    snprintf(httpBuf, sizeof(httpBuf), " - Version : %s\n", hp->version);
+    enqueue(q, httpBuf);
+    printf("%s", httpBuf);
 
     snprintf(httpBuf, sizeof(httpBuf), "[HTTP Header]\n");
     enqueue(q, httpBuf);
     printf("%s", httpBuf);
 
-    while (hh != NULL) {
-        printf("previous name\n");
-        char* test = "test";
-        //세그멘테이션 오류 발생 hh->name을 지우니 없어짐
-        snprintf(httpBuf, sizeof(httpBuf), " - Name: %s\n", test);
-        printf("snprintf\n");
-        enqueue(q, httpBuf);
-        printf("enqueue\n");
-        printf("%s", httpBuf);
-        printf("after name\n");
-
-        printf("previous value\n");
-        //세그멘테이션 오류 발생 hh->value
-        snprintf(httpBuf, sizeof(httpBuf), " - Value: %s\n", test);
-        printf("snprintf\n");
-        enqueue(q, httpBuf);
-        printf("enqueue\n");
-        printf("%s", httpBuf);
-        printf("after value\n");
-
-        //세그멘테이션 오류
-        hh = hh->next;
-    }
+//    while (hh != NULL) {
+//        printf("previous name\n");
+//        char* test = "test";
+//        //세그멘테이션 오류 발생 hh->name을 지우니 없어짐
+//        snprintf(httpBuf, sizeof(httpBuf), " - Name: %s\n", hh->name);
+//        printf("snprintf\n");
+//        enqueue(q, httpBuf);
+//        printf("enqueue\n");
+//        printf("%s", httpBuf);
+//        printf("after name\n");
+//
+//        printf("previous value\n");
+//        //세그멘테이션 오류 발생 hh->value
+//        snprintf(httpBuf, sizeof(httpBuf), " - Value: %s\n", hh->value);
+//        printf("snprintf\n");
+//        enqueue(q, httpBuf);
+//        printf("enqueue\n");
+//        printf("%s", httpBuf);
+//        printf("after value\n");
+//
+//        //세그멘테이션 오류
+//        hh = hh->next;
+//    }
 }
 
 void saveCaptureManager(){

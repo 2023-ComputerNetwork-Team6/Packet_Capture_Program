@@ -1,6 +1,8 @@
 #ifndef NETWORK_RAW_SOCKET_DNS_H
 #define NETWORK_RAW_SOCKET_DNS_H
 
+
+#pragma pack(1)
 struct dnsHeader{
     unsigned short id;
     unsigned char rd : 1;
@@ -24,5 +26,5 @@ struct dnsPacket {
     char* data;
     int dataSize;
 };
-
+#pragma pack()
 #endif NETWORK_RAW_SOCKET_DNS_H
