@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_QUEUE_SIZE 2000
-#define MAX_DATA_SIZE 51
+#define MAX_QUEUE_SIZE 4000
+#define MAX_DATA_SIZE 201
 
 struct LogQueueNode{
     char data[MAX_DATA_SIZE];

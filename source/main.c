@@ -4,11 +4,9 @@
 #include <pthread.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
-#include <netinet/ip6.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
-#include <ctype.h>
 #include <arpa/inet.h>
 #include "log/logQueue.h"
 #include "header_structure/dns.h"
@@ -38,9 +36,8 @@ void ipCapture(struct LogQueue* q, struct iphdr* iph);
 void tcpCapture(struct LogQueue* q, struct tcphdr* th);
 void udpCapture(struct LogQueue* q, struct udphdr* uh);
 void icmpCapture(struct LogQueue* q, struct icmphdr* ih);
-// void dnsCapture(struct LogQueue* q, struct dnsHeader* dh);
 void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket);
-void httpCapture(struct LogQueue* q, struct httpHeader* hh);
+void httpCapture(struct LogQueue* q, struct httpPacket* hp);
 void sshCapture(struct LogQueue* q, struct sshHeader* sh);
 
 void saveCaptureManager();
@@ -82,6 +79,7 @@ void menuManager(){
                     printf("분석한 패킷의 내용이 존재하지 않습니다.\n");
                     break;
                 }
+                pthread_cancel(ct);
                 recvStatus = 0;
                 saveCaptureManager();
                 break;
@@ -93,7 +91,7 @@ void menuManager(){
                 int answer = getchar();
                 if(answer == 'y'){
                     clear(&lq);
-                    printf("* 0 이하의 값을 입력하시면 초기 사이즈(2000줄) 설정으로 돌아갑니다.\n   [현재 사이즈 : %d줄]\n", lq.maxSize);
+                    printf("* 0 이하의 값을 입력하시면 초기 사이즈(%d줄) 설정으로 돌아갑니다.\n   [현재 사이즈 : %d줄]\n", MAX_QUEUE_SIZE, lq.maxSize);
                     printf("입력 값 : ");
                     scanf(" %d", &answer);
                     initialize(&lq, answer);
@@ -145,14 +143,15 @@ void captureManager(struct LogQueue* q, char* buf){
 
         if(ipHeader->protocol == ICMP){
             struct icmphdr* icmpHeader = (struct icmphdr*)(buf + overloadLength);
-
+            icmpCapture(&lq, icmpHeader);
         }else if(ipHeader->protocol == TCP){
             struct tcphdr* tcpHeader = (struct tcphdr*)(buf + overloadLength);
             tcpCapture(&lq, tcpHeader); // TCP 헤더 분석 함수 호출
             uint16_t sourcePort = ntohs(tcpHeader->th_sport);
             uint16_t destPort = ntohs(tcpHeader->th_dport);
             if(sourcePort == HTTP){
-
+                struct httpHeader* httpHeader = (struct httpHeader*)(tcpHeader + (tcpHeader->th_off)*4);
+                httpCapture(&lq, httpHeader);
             }else if(destPort == HTTP){
 
             }else if(sourcePort == SSH){
@@ -166,9 +165,9 @@ void captureManager(struct LogQueue* q, char* buf){
             udpCapture(&lq, udpHeader); // UDP 헤더 분석 함수 호출
             uint16_t sourcePort = ntohs(udpHeader->uh_sport);
             uint16_t destPort = ntohs(udpHeader->uh_dport); 
-            if(sourcePort == UDP){
+            if(sourcePort == DNS){
 
-            }else if(destPort == UDP){
+            }else if(destPort == DNS){
 
             }
         }
@@ -176,7 +175,7 @@ void captureManager(struct LogQueue* q, char* buf){
 }
 
 void ethernetCapture(struct LogQueue* q, struct ethhdr* eh){
-    char etherBuf[MAX_DATA_SIZE] = {'0'};
+    char etherBuf[MAX_DATA_SIZE] = {0};
     snprintf(etherBuf, sizeof(etherBuf), "\n\n[Ethernet Header]\n");
     enqueue(q, etherBuf);
     printf("%s", etherBuf);
@@ -191,7 +190,7 @@ void ethernetCapture(struct LogQueue* q, struct ethhdr* eh){
 }
 
 void ipCapture(struct LogQueue* q, struct iphdr* iph){
-    char ipBuf[MAX_DATA_SIZE];
+    char ipBuf[MAX_DATA_SIZE]={0};
     struct in_addr s, d;
     s.s_addr = iph->saddr;
     d.s_addr = iph->daddr;
@@ -226,11 +225,27 @@ void ipCapture(struct LogQueue* q, struct iphdr* iph){
 }
 
 void icmpCapture(struct LogQueue* q, struct icmphdr* ih){
+    char icmpBuf[MAX_DATA_SIZE]={0};
 
+    snprintf(icmpBuf, sizeof(icmpBuf), "[ICMP Header]\n");
+    enqueue(q, icmpBuf);
+    printf("%s", icmpBuf);
+
+    snprintf(icmpBuf, sizeof(icmpBuf), " - Type : %d\n", ih->type);
+    enqueue(q, icmpBuf);
+    printf("%s", icmpBuf);
+
+    snprintf(icmpBuf, sizeof(icmpBuf), " - Code : %d\n", ih->code);
+    enqueue(q, icmpBuf);
+    printf("%s", icmpBuf);
+
+    snprintf(icmpBuf, sizeof(icmpBuf), " - Checksum : %d\n", ih->checksum);
+    enqueue(q, icmpBuf);
+    printf("%s", icmpBuf);
 }
 
 void tcpCapture(struct LogQueue* q, struct tcphdr* th) {
-    char tcpBuf[MAX_DATA_SIZE];
+    char tcpBuf[MAX_DATA_SIZE]={0};
     snprintf(tcpBuf, sizeof(tcpBuf), "[TCP Header]\n");
     enqueue(q, tcpBuf);
     printf("%s", tcpBuf);
@@ -239,6 +254,7 @@ void tcpCapture(struct LogQueue* q, struct tcphdr* th) {
     uint16_t destPort = ntohs(th->th_dport);
     uint32_t seqNumber = ntohl(th->th_seq);
     uint32_t ackNumber = ntohl(th->th_ack);
+    uint16_t checksum = ntohs(th->th_sum);
 
 
     snprintf(tcpBuf, sizeof(tcpBuf), " - Source Port: %u\n", sourcePort);
@@ -257,10 +273,14 @@ void tcpCapture(struct LogQueue* q, struct tcphdr* th) {
     snprintf(tcpBuf, sizeof(tcpBuf), " - Ack Number: %u\n", ackNumber);
     enqueue(q, tcpBuf);
     printf("%s", tcpBuf);
+
+    snprintf(tcpBuf, sizeof(tcpBuf), " - Checksum: %u\n", checksum);
+    enqueue(q, tcpBuf);
+    printf("%s", tcpBuf);
 }
 
 void udpCapture(struct LogQueue* q, struct udphdr* uh) {
-    char udpBuf[MAX_DATA_SIZE];
+    char udpBuf[MAX_DATA_SIZE]={0};
     snprintf(udpBuf, sizeof(udpBuf), "[UDP Header]\n");
     enqueue(q, udpBuf);
     printf("%s", udpBuf);
@@ -268,6 +288,7 @@ void udpCapture(struct LogQueue* q, struct udphdr* uh) {
     uint16_t sourcePort = ntohs(uh->uh_sport);
     uint16_t destPort = ntohs(uh->uh_dport);
     uint16_t length = ntohs(uh->uh_ulen);
+    uint16_t checksum = ntohs(uh->uh_sum);
 
 
     snprintf(udpBuf, sizeof(udpBuf), " - Source Port: %u\n", sourcePort);
@@ -278,9 +299,11 @@ void udpCapture(struct LogQueue* q, struct udphdr* uh) {
     enqueue(q, udpBuf);
     printf("%s", udpBuf);
 
-    uint16_t checksum = ntohs(uh->uh_sum);
-
     snprintf(udpBuf, sizeof(udpBuf), " - Length: %u\n", length);
+    enqueue(q, udpBuf);
+    printf("%s", udpBuf);
+
+    snprintf(udpBuf, sizeof(udpBuf), " - Checksum: %u\n", checksum);
     enqueue(q, udpBuf);
     printf("%s", udpBuf);
 }
@@ -301,7 +324,7 @@ void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket) {
     printf("%s", dnsBuf);
 
     // Flag 및 DNS 데이터 출력 부분은 아직 미완
-    
+
     // snprintf(dnsBuf, sizeof(dnsBuf), " - FLAGS: %04x\n", ntohs(dh->id));
     // enqueue(q, dnsBuf);
     // printf("%s", dnsBuf);
@@ -318,6 +341,39 @@ void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket) {
     //     printf("%s", dnsBuf);
     // }
     printf("\n");
+}
+
+void httpCapture(struct LogQueue* q, struct httpPacket* hp){
+    struct httpHeader* hh = hp->headers;
+    char httpBuf[MAX_DATA_SIZE]={0};
+
+    snprintf(httpBuf, sizeof(httpBuf), "[HTTP Header]\n");
+    enqueue(q, httpBuf);
+    printf("%s", httpBuf);
+
+    while (hh != NULL) {
+        printf("previous name\n");
+        char* test = "test";
+        //세그멘테이션 오류 발생 hh->name을 지우니 없어짐
+        snprintf(httpBuf, sizeof(httpBuf), " - Name: %s\n", test);
+        printf("snprintf\n");
+        enqueue(q, httpBuf);
+        printf("enqueue\n");
+        printf("%s", httpBuf);
+        printf("after name\n");
+
+        printf("previous value\n");
+        //세그멘테이션 오류 발생 hh->value
+        snprintf(httpBuf, sizeof(httpBuf), " - Value: %s\n", test);
+        printf("snprintf\n");
+        enqueue(q, httpBuf);
+        printf("enqueue\n");
+        printf("%s", httpBuf);
+        printf("after value\n");
+
+        //세그멘테이션 오류
+        hh = hh->next;
+    }
 }
 
 void saveCaptureManager(){
