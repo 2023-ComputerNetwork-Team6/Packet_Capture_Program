@@ -9,9 +9,6 @@
 #include <netinet/udp.h>
 #include <arpa/inet.h>
 #include "log/logQueue.h"
-#include "header_structure/dns.h"
-#include "header_structure/ssh.h"
-#include "header_structure/http.h"
 
 #define IP 8
 #define TCP 6
@@ -47,7 +44,7 @@ int recvStatus = 0;
 struct LogQueue lq;
 
 int main() {
-    initialize(&lq, INIT_QUEUE_SIZE);
+    initializeLogQueue(&lq, INIT_QUEUE_SIZE);
     printf("******* Packet Capture Program *******\n");
     printf("[자세한 작동 방식은 사용법을 참조하세요.]\n");
     menuManager();
@@ -93,7 +90,7 @@ void menuManager(){
                     printf("* 0 이하의 값을 입력하시면 초기 사이즈(%d줄) 설정으로 돌아갑니다.\n   [현재 사이즈 : %d줄]\n", MAX_QUEUE_SIZE, lq.maxSize);
                     printf("입력 값 : ");
                     scanf(" %d", &answer);
-                    initialize(&lq, answer);
+                    initializeLogQueue(&lq, answer);
                 }
                 break;
             case 0:
@@ -153,7 +150,7 @@ void captureManager(struct LogQueue* q, char* buf){
             int payloadLength = ipTotalLength - tcpHeaderLength;
             if(sourcePort == HTTP && payloadLength>0){
                 struct httpPacket* httpPacket = (struct httpPacket*)(buf + overloadLength + tcpHeaderLength);
-                httpCapture(q, httpPacket);
+
             }else if(destPort == HTTP && payloadLength>0){
                 struct httpPacket* httpPacket = (struct httpPacket*)(buf + overloadLength + tcpHeaderLength);
                 httpCapture(q, httpPacket);
@@ -310,63 +307,6 @@ void udpCapture(struct LogQueue* q, struct udphdr* uh) {
     snprintf(udpBuf, sizeof(udpBuf), " - Checksum: %u\n", checksum);
     enqueue(q, udpBuf);
     printf("%s", udpBuf);
-}
-
-void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket) {
-    struct dnsHeader* dh = dnsPacket->dnsHeader;
-    if(dh == NULL)
-        printf("dh is null\n");
-    char* data = dnsPacket->data;
-    int dataSize = dnsPacket->dataSize;
-
-    // DNS Header
-    char dnsBuf[MAX_DATA_SIZE];
-    snprintf(dnsBuf, sizeof(dnsBuf), "[DNS Header]\n");
-    enqueue(q, dnsBuf);
-    printf("%s", dnsBuf);
-
-//    snprintf(dnsBuf, sizeof(dnsBuf), " - ID: %04x\n", ntohs(dh->id));
-//    enqueue(q, dnsBuf);
-//    printf("%s", dnsBuf);
-
-    // Flag 및 DNS 데이터 출력 부분은 아직 미완
-
-    // snprintf(dnsBuf, sizeof(dnsBuf), " - FLAGS: %04x\n", ntohs(dh->id));
-    // enqueue(q, dnsBuf);
-    // printf("%s", dnsBuf);
-
-    // DNS Data
-    // snprintf(dnsBuf, sizeof(dnsBuf), "\n[DNS Data]\n");
-    // enqueue(q, dnsBuf);
-    // printf("%s", dnsBuf);
-
-    // // DNS 데이터 출력 (주의: 데이터가 바이너리일 수 있으므로 문자열로 변환 필요), 현재는 16진수로 출력
-    // for (int i = 0; i < dataSize; i++) {
-    //     snprintf(dnsBuf, sizeof(dnsBuf), "%02x ", data[i] & 0xFF);
-    //     enqueue(q, dnsBuf);
-    //     printf("%s", dnsBuf);
-    // }
-    printf("\n");
-}
-
-void httpCapture(struct LogQueue* q, struct httpPacket* hp){
-    char httpBuf[MAX_PACKET_SIZE]={0};
-
-    snprintf(httpBuf, sizeof(httpBuf), "[HTTP]\n");
-    enqueue(q, httpBuf);
-    printf("%s", httpBuf);
-
-    snprintf(httpBuf, sizeof(httpBuf), "%s \n", hp->message);
-    enqueue(q, httpBuf);
-    printf("%s", httpBuf);
-
-//    snprintf(httpBuf, sizeof(httpBuf), " - Path : %s\n", hp->path);
-//    enqueue(q, httpBuf);
-//    printf("%s", httpBuf);
-//
-//    snprintf(httpBuf, sizeof(httpBuf), " - Version : %s\n", hp->version);
-//    enqueue(q, httpBuf);
-//    printf("%s", httpBuf);
 }
 
 void saveCaptureManager(){
