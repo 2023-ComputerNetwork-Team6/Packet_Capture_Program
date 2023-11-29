@@ -133,30 +133,30 @@ void* captureThread(void* arg){
 
 void captureManager(struct LogQueue* q, char* buf){
     struct ethhdr* ethernetHeader = (struct ethhdr*)buf;
-    ethernetCapture(&lq, ethernetHeader);
+    ethernetCapture(q, ethernetHeader);
 
     if(ethernetHeader->h_proto == IP){
         struct iphdr* ipHeader = (struct iphdr*)(buf + ETH_HLEN);
         int overloadLength = ETH_HLEN + (ipHeader->ihl*4);
         int ipTotalLength = ntohs(ipHeader->tot_len);
-        ipCapture(&lq, ipHeader);
+        ipCapture(q, ipHeader);
 
         if(ipHeader->protocol == ICMP){
             struct icmphdr* icmpHeader = (struct icmphdr*)(buf + overloadLength);
-            icmpCapture(&lq, icmpHeader);
+            icmpCapture(q, icmpHeader);
         }else if(ipHeader->protocol == TCP){
             struct tcphdr* tcpHeader = (struct tcphdr*)(buf + overloadLength);
-            tcpCapture(&lq, tcpHeader); // TCP 헤더 분석 함수 호출
+            tcpCapture(q, tcpHeader); // TCP 헤더 분석 함수 호출
             uint16_t sourcePort = ntohs(tcpHeader->th_sport);
             uint16_t destPort = ntohs(tcpHeader->th_dport);
             int tcpHeaderLength = (tcpHeader->th_off*4);
             int payloadLength = ipTotalLength - tcpHeaderLength;
             if(sourcePort == HTTP && payloadLength>0){
-                struct httpPacket* httpPacket = (struct httpPacket*)(tcpHeader + tcpHeaderLength);
-                httpCapture(&lq, httpPacket);
+                struct httpPacket* httpPacket = (struct httpPacket*)(buf + overloadLength + tcpHeaderLength);
+                httpCapture(q, httpPacket);
             }else if(destPort == HTTP && payloadLength>0){
-                struct httpPacket* httpPacket = (struct httpPacket*)(tcpHeader + tcpHeaderLength);
-                httpCapture(&lq, httpPacket);
+                struct httpPacket* httpPacket = (struct httpPacket*)(buf + overloadLength + tcpHeaderLength);
+                httpCapture(q, httpPacket);
             }else if(sourcePort == SSH){
 
             }else if(destPort == SSH){
@@ -350,54 +350,23 @@ void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket) {
 }
 
 void httpCapture(struct LogQueue* q, struct httpPacket* hp){
-    struct httpHeader* hh = hp->headers;
-    if(hp->headers)
-        printf("hp->headers is null\n");
-    char httpBuf[MAX_DATA_SIZE]={0};
+    char httpBuf[MAX_PACKET_SIZE]={0};
 
     snprintf(httpBuf, sizeof(httpBuf), "[HTTP]\n");
     enqueue(q, httpBuf);
     printf("%s", httpBuf);
 
-    snprintf(httpBuf, sizeof(httpBuf), " - Method : %s: \n", hp->method);
+    snprintf(httpBuf, sizeof(httpBuf), "%s \n", hp->message);
     enqueue(q, httpBuf);
     printf("%s", httpBuf);
 
-    snprintf(httpBuf, sizeof(httpBuf), " - Path : %s\n", hp->path);
-    enqueue(q, httpBuf);
-    printf("%s", httpBuf);
-
-    snprintf(httpBuf, sizeof(httpBuf), " - Version : %s\n", hp->version);
-    enqueue(q, httpBuf);
-    printf("%s", httpBuf);
-
-    snprintf(httpBuf, sizeof(httpBuf), "[HTTP Header]\n");
-    enqueue(q, httpBuf);
-    printf("%s", httpBuf);
-
-//    while (hh != NULL) {
-//        printf("previous name\n");
-//        char* test = "test";
-//        //세그멘테이션 오류 발생 hh->name을 지우니 없어짐
-//        snprintf(httpBuf, sizeof(httpBuf), " - Name: %s\n", hh->name);
-//        printf("snprintf\n");
-//        enqueue(q, httpBuf);
-//        printf("enqueue\n");
-//        printf("%s", httpBuf);
-//        printf("after name\n");
+//    snprintf(httpBuf, sizeof(httpBuf), " - Path : %s\n", hp->path);
+//    enqueue(q, httpBuf);
+//    printf("%s", httpBuf);
 //
-//        printf("previous value\n");
-//        //세그멘테이션 오류 발생 hh->value
-//        snprintf(httpBuf, sizeof(httpBuf), " - Value: %s\n", hh->value);
-//        printf("snprintf\n");
-//        enqueue(q, httpBuf);
-//        printf("enqueue\n");
-//        printf("%s", httpBuf);
-//        printf("after value\n");
-//
-//        //세그멘테이션 오류
-//        hh = hh->next;
-//    }
+//    snprintf(httpBuf, sizeof(httpBuf), " - Version : %s\n", hp->version);
+//    enqueue(q, httpBuf);
+//    printf("%s", httpBuf);
 }
 
 void saveCaptureManager(){
