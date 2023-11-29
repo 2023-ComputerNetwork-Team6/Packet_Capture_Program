@@ -138,6 +138,7 @@ void captureManager(struct LogQueue* q, char* buf){
     if(ethernetHeader->h_proto == IP){
         struct iphdr* ipHeader = (struct iphdr*)(buf + ETH_HLEN);
         int overloadLength = ETH_HLEN + (ipHeader->ihl*4);
+        int ipTotalLength = ntohs(ipHeader->tot_len);
         ipCapture(&lq, ipHeader);
 
         if(ipHeader->protocol == ICMP){
@@ -148,11 +149,13 @@ void captureManager(struct LogQueue* q, char* buf){
             tcpCapture(&lq, tcpHeader); // TCP 헤더 분석 함수 호출
             uint16_t sourcePort = ntohs(tcpHeader->th_sport);
             uint16_t destPort = ntohs(tcpHeader->th_dport);
-            if(sourcePort == HTTP){
-                struct httpPacket* httpPacket = (struct httpPacket*)(tcpHeader + (tcpHeader->th_off)*4);
+            int tcpHeaderLength = (tcpHeader->th_off*4);
+            int payloadLength = ipTotalLength - tcpHeaderLength;
+            if(sourcePort == HTTP && payloadLength>0){
+                struct httpPacket* httpPacket = (struct httpPacket*)(tcpHeader + tcpHeaderLength);
                 httpCapture(&lq, httpPacket);
-            }else if(destPort == HTTP){
-                struct httpPacket* httpPacket = (struct httpPacket*)(tcpHeader + (tcpHeader->th_off)*4);
+            }else if(destPort == HTTP && payloadLength>0){
+                struct httpPacket* httpPacket = (struct httpPacket*)(tcpHeader + tcpHeaderLength);
                 httpCapture(&lq, httpPacket);
             }else if(sourcePort == SSH){
 
@@ -348,8 +351,8 @@ void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket) {
 
 void httpCapture(struct LogQueue* q, struct httpPacket* hp){
     struct httpHeader* hh = hp->headers;
-    if(hh == NULL)
-        printf("hh is null\n");
+    if(hp->headers)
+        printf("hp->headers is null\n");
     char httpBuf[MAX_DATA_SIZE]={0};
 
     snprintf(httpBuf, sizeof(httpBuf), "[HTTP]\n");
