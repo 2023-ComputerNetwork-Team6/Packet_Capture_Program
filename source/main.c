@@ -33,9 +33,6 @@ void ipCapture(struct LogQueue* q, struct iphdr* iph);
 void tcpCapture(struct LogQueue* q, struct tcphdr* th);
 void udpCapture(struct LogQueue* q, struct udphdr* uh);
 void icmpCapture(struct LogQueue* q, struct icmphdr* ih);
-void dnsCapture(struct LogQueue* q, struct dnsPacket* dnsPacket);
-void httpCapture(struct LogQueue* q, struct httpPacket* hp);
-void sshCapture(struct LogQueue* q, struct sshHeader* sh);
 
 void saveCaptureManager();
 void saveCapture(char* fn);
@@ -152,8 +149,7 @@ void captureManager(struct LogQueue* q, char* buf){
                 struct httpPacket* httpPacket = (struct httpPacket*)(buf + overloadLength + tcpHeaderLength);
 
             }else if(destPort == HTTP && payloadLength>0){
-                struct httpPacket* httpPacket = (struct httpPacket*)(buf + overloadLength + tcpHeaderLength);
-                httpCapture(q, httpPacket);
+
             }else if(sourcePort == SSH){
 
             }else if(destPort == SSH){
@@ -166,8 +162,7 @@ void captureManager(struct LogQueue* q, char* buf){
             uint16_t sourcePort = ntohs(udpHeader->uh_sport);
             uint16_t destPort = ntohs(udpHeader->uh_dport); 
             if(sourcePort == DNS){
-                struct dnsPacket* dnsPacket = (struct dnsPacket*)((char*)udpHeader + sizeof(struct udphdr));
-                dnsCapture(&lq, dnsPacket);
+
             }else if(destPort == DNS){
 
             }
