@@ -74,11 +74,12 @@ void menuManager(){
   int rs;
   int start = 0;
   pthread_t ct;
+  menuPrint();
+  printf("메뉴 선택 : ");
   while(1){
 	if(lq.front != NULL){
     	printf("\n\033[0;3%dm임시 저장 데이터가 존재합니다!\033[0m\n", blue);
 	}
-	menuPrint();
 	scanf("%d", &menu);
 	scanf("%*c");       	//버퍼 비우기
 	switch (menu) {
@@ -100,14 +101,19 @@ void menuManager(){
         	}
         	recvStatus = 0;
         	saveCaptureManager();
+            menuPrint();
+            printf("메뉴 선택 : ");
         	break;
     	case 3:
         	system("clear");
+            menuPrint();
+            printf("메뉴 선택 : ");
         	break;
 
     	case 4:
         	if(lq.front != NULL)
             	clear(&lq);
+            printf("메뉴 선택 : ");
         	break;
     	case 9:
         	if(recvStatus == 1){
@@ -116,13 +122,14 @@ void menuManager(){
         	}
         	printf("[ \033[0;3%dm주의\033[0m ] 해당 기능을 사용할 시 기존에 저장된 분석 결과는 삭제됩니다.\n계속 진행하시겠습니까? [y/n] ", yellow);
         	int answer = getchar();
-        	if(answer == 'y'){
+        	if(answer == 'y' || answer == 'Y'){
             	clear(&lq);
             	printf("\033[0;3%dm* 0 이하의 값을 입력하시면 초기 사이즈(%d) 설정으로 돌아갑니다.\n* 임시 저장공간이 꽉차도 분석이 중단되지 않습니다!\033[0m\n\t[ \033[0;3%dm현재 사이즈 : %d\033[0m ]\n",yellow, MAX_QUEUE_SIZE, blue, lq.maxSize);
             	printf("입력 값 : ");
             	scanf(" %d", &answer);
             	initializeLogQueue(&lq, answer);
         	}
+            printf("메뉴 선택 : ");
         	break;
     	case 0:
         	close(rs);
@@ -144,7 +151,6 @@ void menuPrint(){
   printf("9. 최대 임시 저장 공간 길이 설정\n");
   printf("\033[0;3%dm0. 종료\033[0m\n", red);
   printf("========================================================\n");
-  printf("메뉴 선택 : ");
 }
 
 void* captureThread(void* arg){
