@@ -68,7 +68,7 @@ void menuManager(){
     pthread_t ct;
     while(1){
         if(lq.front != NULL){
-            printf("\n임시 저장 데이터가 존재합니다!\n");
+            printf("\n\033[0;3%dm임시 저장 데이터가 존재합니다!\033[0m\n", blue);
         }
         menuPrint();
         scanf("%d", &menu);
@@ -95,6 +95,11 @@ void menuManager(){
             case 3:
                 system("clear");
                 break;
+
+            case 4:
+                if(lq.front != NULL)
+                    clear(&lq);
+                break;
             case 9:
                 if(recvStatus == 1){
                     printf("[ \033[0;3%dm!경고!\033[0m ] 패킷 분석 도중에는 해당 기능을 이용하실 수 없습니다.", red);
@@ -104,7 +109,7 @@ void menuManager(){
                 int answer = getchar();
                 if(answer == 'y'){
                     clear(&lq);
-                    printf("\033[0;3%dm* 0 이하의 값을 입력하시면 초기 사이즈(%d줄) 설정으로 돌아갑니다.\n* 임시 저장공간이 꽉차도 분석이 중단되지 않습니다!\033[0m\n\t[ \033[0;3%dm현재 사이즈 : %d줄\033[0m ]\n",yellow, MAX_QUEUE_SIZE, blue, lq.maxSize);
+                    printf("\033[0;3%dm* 0 이하의 값을 입력하시면 초기 사이즈(%d) 설정으로 돌아갑니다.\n* 임시 저장공간이 꽉차도 분석이 중단되지 않습니다!\033[0m\n\t[ \033[0;3%dm현재 사이즈 : %d\033[0m ]\n",yellow, MAX_QUEUE_SIZE, blue, lq.maxSize);
                     printf("입력 값 : ");
                     scanf(" %d", &answer);
                     initializeLogQueue(&lq, answer);
@@ -125,7 +130,8 @@ void menuPrint(){
     printf("1. 패킷 분석\n");
     printf("2. 분석 종료 및 결과 저장\n");
     printf("3. 화면 비우기\n");
-    printf("9. 최대 임시 저장 줄 설정\n");
+    printf("4. 임시 저장 데이터 비우기\n");
+    printf("9. 최대 임시 저장 공간 길이 설정\n");
     printf("\033[0;3%dm0. 종료\033[0m\n", red);
     printf("========================================================\n");
     printf("메뉴 선택 : ");
@@ -193,79 +199,75 @@ void captureManager(struct LogQueue* q, char* buf){
 
 void ethernetCapture(struct LogQueue* q, struct ethhdr* eh){
     char etherBuf[MAX_DATA_SIZE] = {0};
+    char temp[MAX_DATA_SIZE] = {0};
     snprintf(etherBuf, sizeof(etherBuf), "\n\n[Ethernet Header]\n");
-    enqueue(q, etherBuf);
-    printf("%s", etherBuf);
 
-    snprintf(etherBuf, sizeof(etherBuf), " - Source MAC : %02x:%02x:%02x:%02x:%02x:%02x\n", eh->h_source[0], eh->h_source[1], eh->h_source[2], eh->h_source[3], eh->h_source[4], eh->h_source[5]);
-    enqueue(q, etherBuf);
-    printf("%s", etherBuf);
+    snprintf(temp, sizeof(temp), " - Source MAC : %02x:%02x:%02x:%02x:%02x:%02x\n", eh->h_source[0], eh->h_source[1], eh->h_source[2], eh->h_source[3], eh->h_source[4], eh->h_source[5]);
+    strcat(etherBuf, temp);
 
-    snprintf(etherBuf, sizeof(etherBuf)," - Dest MAC : %02x:%02x:%02x:%02x:%02x:%02x\n", eh->h_dest[0], eh->h_dest[1], eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
+    memset(temp, '\0', sizeof(temp));
+    snprintf(temp, sizeof(temp)," - Dest MAC : %02x:%02x:%02x:%02x:%02x:%02x\n", eh->h_dest[0], eh->h_dest[1], eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
+    strcat(etherBuf, temp);
     enqueue(q, etherBuf);
     printf("%s", etherBuf);
 }
 
 void ipCapture(struct LogQueue* q, struct iphdr* iph){
-    char ipBuf[MAX_DATA_SIZE]={0};
+    char ipBuf[MAX_DATA_SIZE] = {0};
+    char temp[MAX_DATA_SIZE] = {0};
     struct in_addr s, d;
     s.s_addr = iph->saddr;
     d.s_addr = iph->daddr;
 
     snprintf(ipBuf, sizeof(ipBuf), "[IP Header]\n");
-    enqueue(q, ipBuf);
-    printf("%s", ipBuf);
 
-    snprintf(ipBuf, sizeof(ipBuf), " - Version : IPv%d\n", iph->version);
-    enqueue(q, ipBuf);
-    printf("%s", ipBuf);
+    snprintf(temp, sizeof(temp), " - Version : IPv%d\n", iph->version);
+    strcat(ipBuf, temp);
 
-    snprintf(ipBuf, sizeof(ipBuf), " - IP Header Length : %d\n", iph->ihl*4);
-    enqueue(q, ipBuf);
-    printf("%s", ipBuf);
+    snprintf(temp, sizeof(temp), " - IP Header Length : %d\n", iph->ihl*4);
+    strcat(ipBuf, temp);
 
-    snprintf(ipBuf, sizeof(ipBuf), " - Protocol : %d\n", iph->protocol);
-    enqueue(q, ipBuf);
-    printf("%s", ipBuf);
+    memset(temp, '\0', sizeof(temp));
+    snprintf(temp, sizeof(temp), " - Protocol : %d\n", iph->protocol);
+    strcat(ipBuf, temp);
 
-    snprintf(ipBuf, sizeof(ipBuf), " - Checksum : %d\n", iph->check);
-    enqueue(q, ipBuf);
-    printf("%s", ipBuf);
+    memset(temp, '\0', sizeof(temp));
+    snprintf(temp, sizeof(temp), " - Checksum : %d\n", iph->check);
+    strcat(ipBuf, temp);
 
-    snprintf(ipBuf, sizeof(ipBuf), " - Source IP : %s\n", inet_ntoa(s));
-    enqueue(q, ipBuf);
-    printf("%s", ipBuf);
+    snprintf(temp, sizeof(temp), " - Source IP : %s\n", inet_ntoa(s));
+    strcat(ipBuf, temp);
 
-    snprintf(ipBuf, sizeof(ipBuf), " - Dest IP : %s\n", inet_ntoa(d));
+    memset(temp, '\0', sizeof(temp));
+    snprintf(temp, sizeof(temp), " - Dest IP : %s\n", inet_ntoa(d));
+    strcat(ipBuf, temp);
     enqueue(q, ipBuf);
     printf("%s", ipBuf);
 }
 
 void icmpCapture(struct LogQueue* q, struct icmphdr* ih){
-    char icmpBuf[MAX_DATA_SIZE]={0};
+    char icmpBuf[MAX_DATA_SIZE] = {0};
+    char temp[MAX_DATA_SIZE] = {0};
 
     snprintf(icmpBuf, sizeof(icmpBuf), "[ICMP Header]\n");
-    enqueue(q, icmpBuf);
-    printf("%s", icmpBuf);
 
-    snprintf(icmpBuf, sizeof(icmpBuf), " - Type : %d\n", ih->type);
-    enqueue(q, icmpBuf);
-    printf("%s", icmpBuf);
+    snprintf(temp, sizeof(temp), " - Type : %d\n", ih->type);
+    strcat(icmpBuf, temp);
 
-    snprintf(icmpBuf, sizeof(icmpBuf), " - Code : %d\n", ih->code);
-    enqueue(q, icmpBuf);
-    printf("%s", icmpBuf);
+    memset(temp, '\0', sizeof(temp));
+    snprintf(temp, sizeof(temp), " - Code : %d\n", ih->code);
+    strcat(icmpBuf, temp);
 
-    snprintf(icmpBuf, sizeof(icmpBuf), " - Checksum : %d\n", ih->checksum);
+    snprintf(temp, sizeof(temp), " - Checksum : %d\n", ih->checksum);
+    strcat(icmpBuf, temp);
     enqueue(q, icmpBuf);
     printf("%s", icmpBuf);
 }
 
 void tcpCapture(struct LogQueue* q, struct tcphdr* th) {
-    char tcpBuf[MAX_DATA_SIZE]={0};
+    char tcpBuf[MAX_DATA_SIZE] = {0};
+    char temp[MAX_DATA_SIZE] = {0};
     snprintf(tcpBuf, sizeof(tcpBuf), "[TCP Header]\n");
-    enqueue(q, tcpBuf);
-    printf("%s", tcpBuf);
 
     uint16_t sourcePort = ntohs(th->th_sport);
     uint16_t destPort = ntohs(th->th_dport);
@@ -273,34 +275,32 @@ void tcpCapture(struct LogQueue* q, struct tcphdr* th) {
     uint32_t ackNumber = ntohl(th->th_ack);
     uint16_t checksum = ntohs(th->th_sum);
 
+    snprintf(temp, sizeof(temp), " - Source Port: %u\n", sourcePort);
+    strcat(tcpBuf, temp);
 
-    snprintf(tcpBuf, sizeof(tcpBuf), " - Source Port: %u\n", sourcePort);
-    enqueue(q, tcpBuf);
-    printf("%s", tcpBuf);
+    memset(temp, '\0', sizeof(temp));
+    snprintf(temp, sizeof(temp), " - Destination Port: %u\n", destPort);
+    strcat(tcpBuf, temp);
 
-    snprintf(tcpBuf, sizeof(tcpBuf), " - Destination Port: %u\n", destPort);
-    enqueue(q, tcpBuf);
-    printf("%s", tcpBuf);
+    memset(temp, '\0', sizeof(temp));
+    snprintf(temp, sizeof(temp), " - Seq Number: %u\n", seqNumber);
+    strcat(tcpBuf, temp);
 
+    memset(temp, '\0', sizeof(temp));
+    snprintf(temp, sizeof(temp), " - Ack Number: %u\n", ackNumber);
+    strcat(tcpBuf, temp);
 
-    snprintf(tcpBuf, sizeof(tcpBuf), " - Seq Number: %u\n", seqNumber);
-    enqueue(q, tcpBuf);
-    printf("%s", tcpBuf);
-
-    snprintf(tcpBuf, sizeof(tcpBuf), " - Ack Number: %u\n", ackNumber);
-    enqueue(q, tcpBuf);
-    printf("%s", tcpBuf);
-
-    snprintf(tcpBuf, sizeof(tcpBuf), " - Checksum: %u\n", checksum);
+    memset(temp, '\0', sizeof(temp));
+    snprintf(temp, sizeof(temp), " - Checksum: %u\n", checksum);
+    strcat(tcpBuf, temp);
     enqueue(q, tcpBuf);
     printf("%s", tcpBuf);
 }
 
 void udpCapture(struct LogQueue* q, struct udphdr* uh) {
-    char udpBuf[MAX_DATA_SIZE]={0};
+    char udpBuf[MAX_DATA_SIZE] = {0};
+    char temp[MAX_DATA_SIZE] = {0};
     snprintf(udpBuf, sizeof(udpBuf), "[UDP Header]\n");
-    enqueue(q, udpBuf);
-    printf("%s", udpBuf);
 
     uint16_t sourcePort = ntohs(uh->uh_sport);
     uint16_t destPort = ntohs(uh->uh_dport);
@@ -308,19 +308,19 @@ void udpCapture(struct LogQueue* q, struct udphdr* uh) {
     uint16_t checksum = ntohs(uh->uh_sum);
 
 
-    snprintf(udpBuf, sizeof(udpBuf), " - Source Port: %u\n", sourcePort);
-    enqueue(q, udpBuf);
-    printf("%s", udpBuf);
+    snprintf(temp, sizeof(temp), " - Source Port: %u\n", sourcePort);
+    strcat(udpBuf, temp);
 
+    memset(temp, '\0', sizeof(temp));
     snprintf(udpBuf, sizeof(udpBuf), " - Destination Port: %u\n", destPort);
-    enqueue(q, udpBuf);
-    printf("%s", udpBuf);
+    strcat(udpBuf, temp);
 
+    memset(temp, '\0', sizeof(temp));
     snprintf(udpBuf, sizeof(udpBuf), " - Length: %u\n", length);
-    enqueue(q, udpBuf);
-    printf("%s", udpBuf);
+    strcat(udpBuf, temp);
 
-    snprintf(udpBuf, sizeof(udpBuf), " - Checksum: %u\n", checksum);
+    snprintf(temp, sizeof(temp), " - Checksum: %u\n", checksum);
+    strcat(udpBuf, temp);
     enqueue(q, udpBuf);
     printf("%s", udpBuf);
 }
@@ -346,7 +346,6 @@ void hexChangeToAscii(struct LogQueue* q, unsigned char* pl, int len){
     char buf[MAX_DATA_SIZE]={0};
     char temp[MAX_DATA_SIZE]={0};
     for (int i = 0; i < len; i++) {
-        strcat(buf, "\t\t");
         if (i != 0 && i % HEX == 0) {
             for (int j = i - HEX; j < i; j++) {
                 if (pl[j] >= ASCCI_START_NUM && pl[j] < ASCCI_END_NUM){
@@ -356,17 +355,9 @@ void hexChangeToAscii(struct LogQueue* q, unsigned char* pl, int len){
                     strcat(buf, ".");
             }
             strcat(buf, "\n");
-            enqueue(q, buf);
-            printf("%s", buf);
-            memset(buf, '\0', sizeof(buf));
         }
-        if (i % 16 == 0)
-            strcat(buf, "\t");
         sprintf(temp, "%02X", (unsigned int)pl[i]);
         if (i == len - 1){
-            for (int j = 0; j < ((HEX - 1) - (i % HEX)); j++)
-                strcat(buf, "   ");
-            strcat(buf, "\t\t");
             for (int j = (i - (i % HEX)); j <= i; j++){
                 if (pl[j] >= ASCCI_START_NUM && pl[j] < ASCCI_END_NUM){
                     sprintf(temp, "%c", pl[j]);
@@ -376,11 +367,10 @@ void hexChangeToAscii(struct LogQueue* q, unsigned char* pl, int len){
                     strcat(buf, ".");
             }
             strcat(buf, "\n");
-            enqueue(q, buf);
-            printf("%s", buf);
-            memset(buf, '\0', sizeof(buf));
         }
     }
+    enqueue(q, buf);
+    printf("%d | %s", q->size, buf);
 }
 
 void saveCaptureManager(){
@@ -414,7 +404,7 @@ void saveCapture(char* fn){
     }
     unsigned int size = lq.size;
 
-    printf("%s 파일을 저장하는 중입니다.\n\n[ \033[0;3%dm전체 %d 줄\033[0m ]\n", fileName, blue, size);
+    printf("%s 파일을 저장하는 중입니다.\n\n[ \033[0;3%dm전체 %d\033[0m ]\n", fileName, blue, size);
     while(lq.front != NULL){
         char* data = strdup(dequeue(&lq));
         fprintf(captureLog, "%s\n", data);
