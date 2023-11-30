@@ -54,6 +54,8 @@ void saveCapture(char* fn);
 int recvStatus = 0;
 struct LogQueue lq;
 int httpSession[MAX_SESSIONS] = {0};
+int sshSession[MAX_SESSIONS] = {0};
+int dnsSession[MAX_SESSIONS] = {0};
 
 int main() {
    initializeLogQueue(&lq, INIT_QUEUE_SIZE);
@@ -190,18 +192,25 @@ void captureManager(struct LogQueue* q, char* buf){
           		 	httpSessionIndex = findSession(sourcePort, httpSession);
       		 }
       		 if (httpSessionIndex >= 0) {
-          		 	snprintf(temp, sizeof(temp), "[HTTP]  [%d] Session\n", httpSessionIndex);
+          		 	snprintf(temp, sizeof(temp), "[%d] [HTTP] Session", httpSessionIndex);
           		 	enqueue(q, temp);
-      		 }else{
-      		 	snprintf(temp, sizeof(temp), "[HTTP]  [?] Session\n");
-          		 	enqueue(q, temp);
-      		 }
+             }
       		 ethernetCapture(q, ethernetHeader);
       		 ipCapture(q, ipHeader);
       		 tcpCapture(q, tcpHeader);
       		 printApplicationLayerProtocol(q, HTTP);
       		 hexChangeToAscii(q, buf + overloadLength + tcpHeaderLength, payloadLen);
   		 }else if(sourcePort == SSH || destPort == SSH) {
+            int sshSessionIndex;
+      		 if(sourcePort == SSH){
+          		 	sshSessionIndex = findSession(destPort, sshSession);
+      		 }else{
+          		 	sshSessionIndex = findSession(sourcePort, sshSession);
+      		 }
+      		 if (sshSessionIndex >= 0) {
+          		 	snprintf(temp, sizeof(temp), "[%d] [SSH] Session", sshSessionIndex);
+          		 	enqueue(q, temp);
+             }
       		 ethernetCapture(q, ethernetHeader);
       		 ipCapture(q, ipHeader);
       		 tcpCapture(q, tcpHeader);
@@ -217,6 +226,16 @@ void captureManager(struct LogQueue* q, char* buf){
   		 int udpHeaderLength = sizeof(struct udphdr);
   		 int payloadLength = udpPacketLength - udpHeaderLength;
   		 if(sourcePort == DNS || destPort == DNS) {
+            int dnsSessionIndex;
+      		 if(sourcePort == DNS){
+          		 	dnsSessionIndex = findSession(destPort, dnsSession);
+      		 }else{
+          		 	dnsSessionIndex = findSession(sourcePort, dnsSession);
+      		 }
+      		 if (dnsSessionIndex >= 0) {
+          		 	snprintf(temp, sizeof(temp), "[%d] [DNS] Session\n", dnsSessionIndex);
+          		 	enqueue(q, temp);
+             }
       		 ethernetCapture(q, ethernetHeader);
       		 ipCapture(q, ipHeader);
       		 udpCapture(&lq, udpHeader);
@@ -404,22 +423,17 @@ void hexChangeToAscii(struct LogQueue* q, unsigned char* pl, int len){
 }
 
 int findSession(int searchValue, int sessionArray[]) {
-   // 배열에서 searchValue를 찾기
    int arraySize = sessionArray[0] + 1;
    for (int i = 1; i < arraySize+1; i++) {
   	 if (sessionArray[i] == searchValue) {
-  		 return i; // 값을 찾았을 때 해당 인덱스 반환
+  		 return i;
   	 }
    }
-
-   // 값을 찾지 못한 경우, 배열 끝에 추가하고 인덱스 반환
    if (arraySize < MAX_SESSIONS) {
   	 sessionArray[arraySize] = searchValue;
   	 sessionArray[0]++;
   	 return arraySize;
    }
-
-   // 배열이 가득 찬 경우, -1 반환 (에러 또는 실패 표시)
    return -1;
 }
 
