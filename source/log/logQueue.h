@@ -21,7 +21,7 @@ struct LogQueue{
     struct LogQueueNode* rear;
 };
 
-void initialize(struct LogQueue* q, int max_size){
+void initializeLogQueue(struct LogQueue* q, int max_size){
     if(max_size < 1){
         q->size = 1;
         q->maxSize = MAX_QUEUE_SIZE;
