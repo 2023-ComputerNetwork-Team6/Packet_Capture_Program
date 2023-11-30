@@ -77,9 +77,6 @@ void menuManager(){
   menuPrint();
   printf("메뉴 선택 : ");
   while(1){
-	if(lq.front != NULL){
-    	printf("\n\033[0;3%dm임시 저장 데이터가 존재합니다!\033[0m\n", blue);
-	}
 	scanf("%d", &menu);
 	scanf("%*c");       	//버퍼 비우기
 	switch (menu) {
@@ -143,6 +140,9 @@ void menuManager(){
 
 
 void menuPrint(){
+    if(lq.front != NULL){
+        printf("\n\033[0;3%dm임시 저장 데이터가 존재합니다!\033[0m\n", blue);
+    }
   printf("========================= 메뉴 =========================\n");
   printf("1. 패킷 분석\n");
   printf("2. 분석 종료 및 결과 저장\n");
