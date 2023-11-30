@@ -85,11 +85,11 @@ void menuManager(){
     	case 1:
         	start = 1;
         	recvStatus = 1;
+            printf("PacketNum\tSource IP\tDest IP\tProtocol\tLength\tSource Port -> Dest Port\n");
         	if((rs = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) == -1){
             	printf("[ \033[0;3%dm오류\033[0m ] raw socket 생성에 실패했습니다. 프로그램을 종료합니다.", red);
             	exit(1);
         	}
-            printf("PacketNum\tSource IP\tDest IP\tProtocol\tLength\tSource Port -> Dest Port\n");
         	ct = pthread_create(&ct, NULL, captureThread, (void *)&rs);
         	pthread_detach(ct);
         	break;
@@ -205,7 +205,7 @@ void captureManager(struct LogQueue* q, char* buf, int packetNum){
         	ethernetCapture(q, ethernetHeader);
         	ipCapture(q, ipHeader);
         	tcpCapture(q, tcpHeader);
-        	printApplicationLayerProtocol(q, HTTP);
+        	//printApplicationLayerProtocol(q, HTTP);
         	hexChangeToAscii(q, buf + overloadLength + tcpHeaderLength, payloadLen);
         	simpleInfo(packetNum, ipHeader->saddr, ipHeader->daddr, "HTTP", payloadLen, sourcePort, destPort);
     	}else if(sourcePort == SSH || destPort == SSH) {
@@ -222,7 +222,7 @@ void captureManager(struct LogQueue* q, char* buf, int packetNum){
         	ethernetCapture(q, ethernetHeader);
         	ipCapture(q, ipHeader);
         	tcpCapture(q, tcpHeader);
-        	printApplicationLayerProtocol(q, SSH);
+        	//printApplicationLayerProtocol(q, SSH);
         	hexChangeToAscii(q, buf+overloadLength+tcpHeaderLength, payloadLen);
         	simpleInfo(packetNum, ipHeader->saddr, ipHeader->daddr, "SSH", payloadLen, sourcePort, destPort);
     	}
@@ -247,7 +247,7 @@ void captureManager(struct LogQueue* q, char* buf, int packetNum){
         	ethernetCapture(q, ethernetHeader);
         	ipCapture(q, ipHeader);
         	udpCapture(&lq, udpHeader);
-        	printApplicationLayerProtocol(q, DNS);
+        	//printApplicationLayerProtocol(q, DNS);
         	hexChangeToAscii(q, buf + overloadLength + udpHeaderLength, payloadLength);
         	simpleInfo(packetNum, ipHeader->saddr, ipHeader->daddr, "DNS", payloadLength, sourcePort, destPort);
     	}
